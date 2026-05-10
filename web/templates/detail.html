@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ outline.title }} - CSDN 教程管理</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><a href="/" style="color:inherit;text-decoration:none;"><span>CSDN</span> 教程管理</a></h1>
+        <div class="navbar-actions">
+            <a href="/" class="btn">返回列表</a>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                <span class="icon-sun">&#9728;</span>
+                <span class="icon-moon">&#9790;</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 文章头部 -->
+        <div class="detail-header">
+            <h2>{{ outline.title }}</h2>
+            <div class="desc">{{ outline.description }}</div>
+            <div class="tags" style="margin-bottom:16px;">
+                {% for tag in outline.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            <div class="detail-actions">
+                <button class="btn btn-primary" onclick="publishDraft()">保存草稿到 CSDN</button>
+                <button class="btn" onclick="publishArticle()">发布到 CSDN</button>
+                <button class="btn" onclick="viewMarkdown()">查看 Markdown</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">删除文章</button>
+            </div>
+        </div>
+
+        <!-- 主体布局 -->
+        <div class="detail-layout">
+            <!-- Markdown 内容 -->
+            <div class="md-body">
+                {{ html_content|safe }}
+            </div>
+
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 大纲 -->
+                <div class="sidebar-card">
+                    <h4>  章节大纲</h4>
+                    <ul class="outline-list">
+                        {% for section in outline.sections %}
+                        <li>
+                            <span class="section-id">{{ section.id }}</span>
+                            <span class="section-title">{{ section.title }}</span>
+                            <div class="section-desc">{{ section.description }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- 配图 -->
+                {% if images %}
+                <div class="sidebar-card">
+                    <h4>  配图 ({{ images|length }})</h4>
+                    <div class="images-grid">
+                        {% for img in images %}
+                        <img src="/images/{{ name }}/{{ img }}" alt="{{ img }}" loading="lazy"
+                             onclick="window.open(this.src, '_blank')">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Markdown 源码模态框 -->
+    <div id="mdModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal" style="max-width:800px;max-height:80vh;overflow:auto;">
+            <h3>Markdown 源码</h3>
+            <pre style="background:var(--surface2);padding:16px;border-radius:8px;overflow:auto;font-size:13px;line-height:1.5;white-space:pre-wrap;">{{ md_content }}</pre>
+            <div class="modal-actions" style="margin-top:16px;">
+                <button class="btn" onclick="copyMarkdown()">复制</button>
+                <button class="btn" onclick="document.getElementById('mdModal').style.display='none'">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal">
+            <h3>确认删除</h3>
+            <p>确定要删除「{{ outline.title }}」吗？此操作不可恢复。</p>
+            <div class="modal-actions">
+                <button class="btn" onclick="document.getElementById('deleteModal').style.display='none'">取消</button>
+                <button class="btn btn-danger" onclick="deleteArticle()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        // 主题切换
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
+        // 初始化主题
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+
+        // 初始化代码高亮
+        hljs.highlightAll();
+
+        const ARTICLE_NAME = "{{ name }}";
+
+        function showToast(msg, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function publishDraft() {
+            if (!confirm('保存草稿到 CSDN？')) return;
+            fetch(`/api/article/${ARTICLE_NAME}/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ draft: true })
+            })
+            .then(r => r.json())
+            .then(d => showToast(d.message))
+            .catch(() => showToast('请求失败', 'error'));
+        }
+
+        function publishArticle() {
+            if (!confirm('确认发布到 CSDN？')) return;
+            fetch(`/api/article/${ARTICLE_NAME}/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ draft: false })
+            })
+            .then(r => r.json())
+            .then(d => showToast(d.message))
+            .catch(() => showToast('请求失败', 'error'));
+        }
+
+        function viewMarkdown() {
+            document.getElementById('mdModal').style.display = 'flex';
+        }
+
+        function copyMarkdown() {
+            const text = document.querySelector('#mdModal pre').textContent;
+            navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'));
+        }
+
+        function confirmDelete() {
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function deleteArticle() {
+            fetch(`/api/article/${ARTICLE_NAME}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(d => {
+                showToast(d.message);
+                setTimeout(() => location.href = '/', 1000);
+            })
+            .catch(() => showToast('删除失败', 'error'));
+        }
+    </script>
+</body>
+</html>

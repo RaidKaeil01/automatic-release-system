@@ -1,0 +1,87 @@
+{
+  "title": "STM32 + YOLOv8 目标检测部署全栈实战",
+  "description": "本教程将引导你完成在STM32微控制器上部署YOLOv8目标检测模型的完整流程，涵盖从硬件选型、模型量化、交叉编译到系统优化的全栈技术。",
+  "tags": [
+    "嵌入式AI",
+    "STM32",
+    "YOLOv8",
+    "目标检测",
+    "模型部署"
+  ],
+  "sections": [
+    {
+      "id": 1,
+      "title": "硬件平台与开发环境准备",
+      "description": "介绍适合运行YOLOv8的STM32硬件平台，并搭建完整的开发环境。",
+      "key_points": [
+        "STM32H7系列MCU选型与性能分析",
+        "STM32CubeIDE与STM32CubeMX安装配置",
+        "交叉编译工具链与调试器设置",
+        "硬件连接与基础外设测试"
+      ],
+      "code_language": "bash/cmake"
+    },
+    {
+      "id": 2,
+      "title": "YOLOv8模型准备与量化转换",
+      "description": "将YOLOv8模型转换为适合在STM32上运行的格式，并进行关键的量化操作。",
+      "key_points": [
+        "YOLOv8模型导出为ONNX格式",
+        "使用STM32CubeMX AI插件进行模型量化",
+        "INT8量化原理与精度/性能权衡",
+        "生成可在MCU上运行的优化模型文件"
+      ],
+      "code_language": "python"
+    },
+    {
+      "id": 3,
+      "title": "STM32工程创建与交叉编译",
+      "description": "创建STM32工程，集成AI推理库，并完成首次交叉编译。",
+      "key_points": [
+        "使用STM32CubeMX配置AI中间件与硬件外设",
+        "集成X-CUBE-AI库与推理引擎",
+        "配置CMake或Makefile进行交叉编译",
+        "解决链接错误与内存映射问题"
+      ],
+      "code_language": "c/cmake"
+    },
+    {
+      "id": 4,
+      "title": "推理引擎集成与代码优化",
+      "description": "在STM32上实现完整的推理流程，并进行代码级优化以提升性能。",
+      "key_points": [
+        "初始化AI模型与内存分配",
+        "实现图像预处理（缩放、归一化）",
+        "调用推理引擎并获取输出张量",
+        "实现YOLOv8后处理（NMS、坐标解码）",
+        "使用CMSIS-DSP等库进行计算优化"
+      ],
+      "code_language": "c"
+    },
+    {
+      "id": 5,
+      "title": "系统调试、性能分析与优化",
+      "description": "对部署的系统进行全面调试，分析性能瓶颈并进行针对性优化。",
+      "key_points": [
+        "使用串口/调试器监控推理过程与结果",
+        "测量推理时间、内存占用与功耗",
+        "优化内存布局与数据搬运",
+        "利用STM32硬件加速器（如DMA2D、GPU）",
+        "精度验证与问题排查"
+      ],
+      "code_language": "c/bash"
+    },
+    {
+      "id": 6,
+      "title": "完整应用集成与实战演示",
+      "description": "将目标检测功能集成到实际应用中，完成从摄像头采集到结果显示的完整系统。",
+      "key_points": [
+        "集成摄像头驱动（如OV5640）与图像采集",
+        "实现检测结果在LCD屏幕上的可视化",
+        "构建实时目标检测流水线",
+        "讨论扩展应用：通信上传、低功耗模式、多任务调度"
+      ],
+      "code_language": "c"
+    }
+  ]
+}

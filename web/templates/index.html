@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSDN 教程管理</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1><span>CSDN</span> 教程管理</h1>
+        <div class="navbar-actions">
+            <span style="color:var(--text2);font-size:13px;" id="countDisplay">{{ articles|length }} 篇文章</span>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                <span class="icon-sun">&#9728;</span>
+                <span class="icon-moon">&#9790;</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 生成新文章 -->
+        <div class="generate-panel">
+            <div class="generate-header" onclick="toggleGeneratePanel()">
+                <h3>生成新文章</h3>
+                <span class="toggle-icon" id="toggleIcon">&#9660;</span>
+            </div>
+            <div class="generate-body" id="generateBody">
+                <div class="generate-form">
+                    <div class="form-row">
+                        <input type="text" id="topicInput" class="form-input" placeholder="输入技术主题，如：STM32 PWM 电机控制" />
+                        <input type="number" id="maxImages" class="form-input form-input-sm" placeholder="图片数" value="3" min="0" max="20" title="最大配图数量" />
+                        <button class="btn btn-primary" id="generateBtn" onclick="startGenerate()">
+                            开始生成
+                        </button>
+                    </div>
+                    <div class="form-hint">输入主题后点击生成，AI 将自动规划大纲、编写内容、生成配图并保存到 CSDN 草稿</div>
+                </div>
+
+                <!-- 进度区域 -->
+                <div class="progress-area" id="progressArea" style="display:none;">
+                    <div class="progress-steps">
+                        <div class="progress-step" id="step1">
+                            <div class="step-icon">1</div>
+                            <div class="step-info">
+                                <div class="step-title">规划大纲</div>
+                                <div class="step-detail" id="step1-detail"></div>
+                            </div>
+                        </div>
+                        <div class="progress-step" id="step2">
+                            <div class="step-icon">2</div>
+                            <div class="step-info">
+                                <div class="step-title">生成内容</div>
+                                <div class="step-detail" id="step2-detail"></div>
+                            </div>
+                        </div>
+                        <div class="progress-step" id="step3">
+                            <div class="step-icon">3</div>
+                            <div class="step-info">
+                                <div class="step-title">生成配图</div>
+                                <div class="step-detail" id="step3-detail"></div>
+                            </div>
+                        </div>
+                        <div class="progress-step" id="step4">
+                            <div class="step-icon">4</div>
+                            <div class="step-info">
+                                <div class="step-title">保存草稿</div>
+                                <div class="step-detail" id="step4-detail"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress-result" id="progressResult" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计栏 -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">文章总数</div>
+                <div class="value" id="totalCount">{{ articles|length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">配图总数</div>
+                <div class="value">{{ articles|map(attribute='image_count')|sum }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">章节总数</div>
+                <div class="value">{{ articles|map(attribute='sections_count')|sum }}</div>
+            </div>
+        </div>
+
+        <!-- 分栏标签页 -->
+        <div class="tabs">
+            <button class="tab active" data-category="all" onclick="filterByCategory('all', this)">
+                全部 <span class="tab-count">{{ articles|length }}</span>
+            </button>
+            <button class="tab" data-category="stc51" onclick="filterByCategory('stc51', this)">
+                STC51 <span class="tab-count" id="count-stc51">0</span>
+            </button>
+            <button class="tab" data-category="stm32" onclick="filterByCategory('stm32', this)">
+                STM32 <span class="tab-count" id="count-stm32">0</span>
+            </button>
+            <button class="tab" data-category="esp32" onclick="filterByCategory('esp32', this)">
+                ESP32 <span class="tab-count" id="count-esp32">0</span>
+            </button>
+            <button class="tab" data-category="linux" onclick="filterByCategory('linux', this)">
+                Linux <span class="tab-count" id="count-linux">0</span>
+            </button>
+        </div>
+
+        <!-- 文章列表 -->
+        {% if articles %}
+        <div class="articles-grid" id="articlesGrid">
+            {% for article in articles %}
+            <div class="article-card"
+                 data-tags='{{ article.tags | tojson | e }}'
+                 data-title="{{ article.title }}"
+                 data-name="{{ article.name }}"
+                 onclick="location.href='/article/{{ article.name }}'">
+                <div class="card-category">
+                    {% for tag in article.tags %}
+                        {% if tag|upper in ['STC51', '8051', 'C51'] %}
+                            <span class="category-badge stc51">STC51</span>
+                        {% elif tag|upper in ['STM32'] %}
+                            <span class="category-badge stm32">STM32</span>
+                        {% elif tag|upper in ['ESP32'] %}
+                            <span class="category-badge esp32">ESP32</span>
+                        {% elif tag|upper in ['LINUX', '嵌入式LINUX'] %}
+                            <span class="category-badge linux">Linux</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <h3>{{ article.title }}</h3>
+                <div class="desc">{{ article.description }}</div>
+                <div class="meta">
+                    <span>{{ article.sections_count }} 章</span>
+                    <span>{{ article.image_count }} 张图</span>
+                </div>
+                <div class="tags">
+                    {% for tag in article.tags[:4] %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                    {% if article.tags|length > 4 %}
+                    <span class="tag">+{{ article.tags|length - 4 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <div class="icon"> </div>
+            <h3>该分类暂无文章</h3>
+            <p>运行 <code>python main.py "主题"</code> 生成新教程</p>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="icon"> </div>
+            <h3>还没有文章</h3>
+            <p>运行 <code>python main.py "主题"</code> 生成第一篇教程</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // 主题切换
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
+        // 初始化主题
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+
+        // ── 生成面板 ──────────────────────────────────
+        let isGenerating = false;
+
+        function toggleGeneratePanel() {
+            const body = document.getElementById('generateBody');
+            const icon = document.getElementById('toggleIcon');
+            if (body.style.display === 'none') {
+                body.style.display = '';
+                icon.innerHTML = '&#9650;';
+            } else {
+                body.style.display = 'none';
+                icon.innerHTML = '&#9660;';
+            }
+        }
+
+        function resetSteps() {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.className = 'progress-step';
+                document.getElementById(`step${i}-detail`).textContent = '';
+            }
+            document.getElementById('progressResult').style.display = 'none';
+            document.getElementById('progressResult').innerHTML = '';
+        }
+
+        function setStepStatus(stepNum, status, detail) {
+            const step = document.getElementById(`step${stepNum}`);
+            step.className = `progress-step ${status}`;
+            if (detail) {
+                document.getElementById(`step${stepNum}-detail`).textContent = detail;
+            }
+        }
+
+        function startGenerate() {
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) {
+                document.getElementById('topicInput').focus();
+                return;
+            }
+            if (isGenerating) return;
+
+            isGenerating = true;
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+
+            const maxImages = parseInt(document.getElementById('maxImages').value) || 3;
+            const progressArea = document.getElementById('progressArea');
+            progressArea.style.display = '';
+            resetSteps();
+
+            // 通过 SSE 接收进度
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, max_images: maxImages, draft: true })
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function read() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            finishGenerate();
+                            return;
+                        }
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const event = JSON.parse(line.slice(6));
+                                    handleEvent(event);
+                                } catch (e) {}
+                            }
+                        }
+                        read();
+                    });
+                }
+                read();
+            }).catch(err => {
+                setStepStatus(1, 'error', '请求失败: ' + err.message);
+                finishGenerate();
+            });
+        }
+
+        function handleEvent(event) {
+            const { step, status, detail, data } = event;
+
+            if (step === 0 && status === 'done') {
+                // Pipeline 完成
+                const result = document.getElementById('progressResult');
+                result.style.display = '';
+                result.innerHTML = `
+                    <div class="result-success">
+                        文章「${data.title}」生成完成！
+                        <a href="/article/${data.name}" class="btn btn-sm btn-primary" style="margin-left:12px;">查看文章</a>
+                    </div>`;
+                return;
+            }
+
+            if (step > 0) {
+                setStepStatus(step, status, detail);
+            }
+        }
+
+        function finishGenerate() {
+            isGenerating = false;
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = false;
+            btn.textContent = '开始生成';
+        }
+
+        // 回车触发生成
+        document.getElementById('topicInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') startGenerate();
+        });
+
+        // 分类关键词映射
+        const CATEGORY_KEYWORDS = {
+            stc51: ['stc51', '8051', 'c51', 'stc89', 'stc12', 'stc15'],
+            stm32: ['stm32'],
+            esp32: ['esp32'],
+            linux: ['linux', '嵌入式linux'],
+        };
+
+        // 初始化分类计数
+        function initCounts() {
+            const cards = document.querySelectorAll('.article-card');
+            const counts = { stc51: 0, stm32: 0, esp32: 0, linux: 0 };
+
+            cards.forEach(card => {
+                const tags = JSON.parse(card.dataset.tags || '[]');
+                const lowerTags = tags.map(t => t.toLowerCase());
+                const title = card.dataset.title.toLowerCase();
+
+                for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+                    if (keywords.some(kw => lowerTags.some(t => t.includes(kw)) || title.includes(kw))) {
+                        counts[cat]++;
+                    }
+                }
+            });
+
+            for (const [cat, count] of Object.entries(counts)) {
+                const el = document.getElementById(`count-${cat}`);
+                if (el) el.textContent = count;
+            }
+        }
+
+        // 按分类筛选
+        function filterByCategory(category, btn) {
+            // 更新标签页激活状态
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+
+            const cards = document.querySelectorAll('.article-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                if (category === 'all') {
+                    card.style.display = '';
+                    visibleCount++;
+                    return;
+                }
+
+                const tags = JSON.parse(card.dataset.tags || '[]');
+                const lowerTags = tags.map(t => t.toLowerCase());
+                const title = card.dataset.title.toLowerCase();
+                const keywords = CATEGORY_KEYWORDS[category] || [];
+                const match = keywords.some(kw => lowerTags.some(t => t.includes(kw)) || title.includes(kw));
+
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+
+            // 更新计数和空状态
+            document.getElementById('countDisplay').textContent = `${visibleCount} 篇文章`;
+            document.getElementById('totalCount').textContent = visibleCount;
+
+            const emptyState = document.getElementById('emptyState');
+            const grid = document.getElementById('articlesGrid');
+            if (visibleCount === 0) {
+                emptyState.style.display = '';
+                grid.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                grid.style.display = '';
+            }
+        }
+
+        // 初始化
+        initCounts();
+    </script>
+</body>
+</html>
