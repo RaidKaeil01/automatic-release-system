@@ -11,6 +11,9 @@
         <h1><span>CSDN</span> 教程管理</h1>
         <div class="navbar-actions">
             <span style="color:var(--text2);font-size:13px;" id="countDisplay">{{ articles|length }} 篇文章</span>
+            <button class="theme-toggle" onclick="openSettings()" title="API 设置">
+                &#9881;
+            </button>
             <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
                 <span class="icon-sun">&#9728;</span>
                 <span class="icon-moon">&#9790;</span>
@@ -29,43 +32,116 @@
                 <div class="generate-form">
                     <div class="form-row">
                         <input type="text" id="topicInput" class="form-input" placeholder="输入技术主题，如：STM32 PWM 电机控制" />
-                        <input type="number" id="maxImages" class="form-input form-input-sm" placeholder="图片数" value="3" min="0" max="20" title="最大配图数量" />
                         <button class="btn btn-primary" id="generateBtn" onclick="startGenerate()">
                             开始生成
                         </button>
                     </div>
-                    <div class="form-hint">输入主题后点击生成，AI 将自动规划大纲、编写内容、生成配图并保存到 CSDN 草稿</div>
+                    <div class="form-row image-controls">
+                        <div class="image-control-item">
+                            <label class="wc-label">  流程图</label>
+                            <input type="number" id="maxDiagrams" class="form-input form-input-sm" value="0" min="0" max="20" title="流程图数量，0=自动" />
+                        </div>
+                        <div class="image-control-item">
+                            <label class="wc-label">  AI配图</label>
+                            <input type="number" id="maxAiImages" class="form-input form-input-sm" value="0" min="0" max="20" title="AI图片数量，0=自动" />
+                        </div>
+                        <span class="image-control-hint">0 = 由内容自动决定</span>
+                    </div>
+                    <div class="form-row">
+                        <div class="word-count-control">
+                            <label class="wc-label">目标字数</label>
+                            <div class="wc-slider-wrap">
+                                <input type="range" id="wordCountSlider" class="wc-slider" min="1000" max="15000" step="500" value="5000" oninput="syncWordCount(this.value)" />
+                                <div class="wc-tooltip" id="wcTooltip">5000</div>
+                            </div>
+                            <input type="number" id="wordCountInput" class="form-input form-input-sm wc-number" min="1000" max="20000" step="500" value="5000" onchange="syncWordCountSlider(this.value)" />
+                            <span class="wc-hint">字</span>
+                        </div>
+                    </div>
+                    <div class="form-hint">输入主题后点击「开始生成」，AI 先生成大纲供你确认，确认后再编写内容、生成配图并保存到 CSDN 草稿。流程图和 AI 配图数量设为 0 则由内容自动决定。</div>
+                </div>
+
+                <!-- 大纲预览区域 -->
+                <div class="outline-preview" id="outlinePreview" style="display:none;">
+                    <!-- 卡片视图 -->
+                    <div id="outlineCardView">
+                        <div class="outline-preview-header">
+                            <h4>大纲预览</h4>
+                            <span class="outline-meta" id="outlineMeta"></span>
+                        </div>
+                        <div class="outline-preview-title" id="outlineTitle"></div>
+                        <div class="outline-preview-desc" id="outlineDesc"></div>
+                        <div class="outline-preview-tags" id="outlineTags"></div>
+                        <div class="outline-sections" id="outlineSections"></div>
+                    </div>
+
+                    <!-- 编辑器视图 -->
+                    <div id="outlineEditView" style="display:none;">
+                        <div class="outline-preview-header">
+                            <h4>编辑大纲</h4>
+                            <span class="outline-meta" id="editOutlineMeta"></span>
+                        </div>
+                        <textarea class="outline-editor" id="outlineEditor" spellcheck="false"></textarea>
+                        <div class="editor-actions">
+                            <button class="btn btn-primary" id="saveOutlineBtn" onclick="saveOutlineEdit()">
+                                保存编辑
+                            </button>
+                            <button class="btn" onclick="cancelOutlineEdit()">
+                                取消编辑
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <div class="outline-preview-actions" id="outlineActions">
+                        <button class="btn btn-primary" id="confirmGenerateBtn" onclick="confirmAndGenerate()">
+                            确认生成
+                        </button>
+                        <button class="btn" id="editOutlineBtn" onclick="enterOutlineEdit()">
+                            编辑大纲
+                        </button>
+                        <button class="btn" onclick="previewOutline()">
+                            重新生成
+                        </button>
+                        <button class="btn" onclick="hideOutlinePreview()">
+                            取消
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 进度区域 -->
-                <div class="progress-area" id="progressArea" style="display:none;">
-                    <div class="progress-steps">
+                <div class="progress-area" id="progressArea">
+                    <div class="progress-header" id="progressHeader">
+                        <span>生成流程</span>
+                        <button class="btn btn-sm" id="toggleProgressBtn" onclick="toggleProgressArea()">隐藏</button>
+                    </div>
+                    <div class="progress-steps" id="progressSteps">
                         <div class="progress-step" id="step1">
                             <div class="step-icon">1</div>
                             <div class="step-info">
                                 <div class="step-title">规划大纲</div>
-                                <div class="step-detail" id="step1-detail"></div>
+                                <div class="step-detail" id="step1-detail">根据主题生成教程大纲，确认后继续</div>
                             </div>
                         </div>
                         <div class="progress-step" id="step2">
                             <div class="step-icon">2</div>
                             <div class="step-info">
                                 <div class="step-title">生成内容</div>
-                                <div class="step-detail" id="step2-detail"></div>
+                                <div class="step-detail" id="step2-detail">逐章节编写 Markdown 教程正文</div>
                             </div>
                         </div>
                         <div class="progress-step" id="step3">
                             <div class="step-icon">3</div>
                             <div class="step-info">
                                 <div class="step-title">生成配图</div>
-                                <div class="step-detail" id="step3-detail"></div>
+                                <div class="step-detail" id="step3-detail">生成流程图（Mermaid）和 AI 配图（即梦）</div>
                             </div>
                         </div>
                         <div class="progress-step" id="step4">
                             <div class="step-icon">4</div>
                             <div class="step-info">
                                 <div class="step-title">保存草稿</div>
-                                <div class="step-detail" id="step4-detail"></div>
+                                <div class="step-detail" id="step4-detail">上传到 CSDN 保存为草稿</div>
                             </div>
                         </div>
                     </div>
@@ -135,7 +211,12 @@
                 <div class="desc">{{ article.description }}</div>
                 <div class="meta">
                     <span>{{ article.sections_count }} 章</span>
-                    <span>{{ article.image_count }} 张图</span>
+                    {% if article.diagram_count > 0 %}
+                    <span class="meta-diagram">{{ article.diagram_count }} 流程图</span>
+                    {% endif %}
+                    {% if article.ai_count > 0 %}
+                    <span class="meta-ai">{{ article.ai_count }} AI图</span>
+                    {% endif %}
                 </div>
                 <div class="tags">
                     {% for tag in article.tags[:4] %}
@@ -163,6 +244,15 @@
     </div>
 
     <script>
+        // Toast 提示
+        function showToast(msg, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
         // 主题切换
         function toggleTheme() {
             const html = document.documentElement;
@@ -182,6 +272,10 @@
 
         // ── 生成面板 ──────────────────────────────────
         let isGenerating = false;
+        let isPreviewingOutline = false;
+        let cachedOutline = null;
+        let cachedOutlineMd = '';
+        let cachedOutlineName = '';
 
         function toggleGeneratePanel() {
             const body = document.getElementById('generateBody');
@@ -195,11 +289,54 @@
             }
         }
 
+        // 字数同步
+        function syncWordCount(val) {
+            document.getElementById('wordCountInput').value = val;
+            updateWcTooltip(val);
+        }
+        function syncWordCountSlider(val) {
+            const slider = document.getElementById('wordCountSlider');
+            const v = Math.max(1000, Math.min(20000, parseInt(val) || 5000));
+            slider.value = v;
+            document.getElementById('wordCountInput').value = v;
+            updateWcTooltip(v);
+        }
+        function updateWcTooltip(val) {
+            const slider = document.getElementById('wordCountSlider');
+            const tooltip = document.getElementById('wcTooltip');
+            const min = parseFloat(slider.min);
+            const max = parseFloat(slider.max);
+            const pct = (parseFloat(val) - min) / (max - min);
+            const sliderWidth = slider.offsetWidth;
+            const thumbOffset = 9; // half of thumb width
+            const left = thumbOffset + pct * (sliderWidth - thumbOffset * 2);
+            tooltip.style.left = left + 'px';
+            tooltip.textContent = parseInt(val).toLocaleString();
+        }
+        // 初始化 tooltip 位置
+        document.getElementById('wordCountSlider').addEventListener('input', function() {
+            updateWcTooltip(this.value);
+        });
+        window.addEventListener('resize', function() {
+            updateWcTooltip(document.getElementById('wordCountSlider').value);
+        });
+        // 延迟初始化，确保布局完成
+        setTimeout(function() {
+            updateWcTooltip(document.getElementById('wordCountSlider').value);
+        }, 100);
+
+        const DEFAULT_DETAILS = [
+            '根据主题生成教程大纲，确认后继续',
+            '逐章节编写 Markdown 教程正文',
+            '生成流程图（Mermaid）和 AI 配图（即梦）',
+            '上传到 CSDN 保存为草稿',
+        ];
+
         function resetSteps() {
             for (let i = 1; i <= 4; i++) {
                 const step = document.getElementById(`step${i}`);
                 step.className = 'progress-step';
-                document.getElementById(`step${i}-detail`).textContent = '';
+                document.getElementById(`step${i}-detail`).textContent = DEFAULT_DETAILS[i - 1];
             }
             document.getElementById('progressResult').style.display = 'none';
             document.getElementById('progressResult').innerHTML = '';
@@ -213,29 +350,199 @@
             }
         }
 
-        function startGenerate() {
+        // ── 大纲预览 ──────────────────────────────────
+        function previewOutline() {
             const topic = document.getElementById('topicInput').value.trim();
             if (!topic) {
                 document.getElementById('topicInput').focus();
                 return;
             }
-            if (isGenerating) return;
+            if (isPreviewingOutline) return;
 
+            isPreviewingOutline = true;
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.disabled = true;
+            generateBtn.textContent = '生成中...';
+
+            const wordCount = parseInt(document.getElementById('wordCountInput').value) || 5000;
+
+            hideOutlinePreview();
+
+            fetch('/api/outline', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, word_count: wordCount })
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    alert('大纲生成失败: ' + data.error);
+                    return;
+                }
+                cachedOutline = data.outline;
+                cachedOutlineMd = data.outline_md || '';
+                cachedOutlineName = data.name || '';
+                showOutlinePreview(data.outline, wordCount);
+            }).catch(err => {
+                alert('请求失败: ' + err.message);
+            }).finally(() => {
+                isPreviewingOutline = false;
+                generateBtn.disabled = false;
+                generateBtn.textContent = '开始生成';
+            });
+        }
+
+        function showOutlinePreview(outline, wordCount) {
+            const panel = document.getElementById('outlinePreview');
+            document.getElementById('outlineTitle').textContent = outline.title || '';
+            document.getElementById('outlineDesc').textContent = outline.description || '';
+            document.getElementById('outlineMeta').textContent = `${wordCount} 字 · ${outline.sections ? outline.sections.length : 0} 章`;
+
+            // 标签
+            const tagsEl = document.getElementById('outlineTags');
+            tagsEl.innerHTML = '';
+            (outline.tags || []).forEach(tag => {
+                const span = document.createElement('span');
+                span.className = 'tag';
+                span.textContent = tag;
+                tagsEl.appendChild(span);
+            });
+
+            // 章节列表
+            const sectionsEl = document.getElementById('outlineSections');
+            sectionsEl.innerHTML = '';
+            (outline.sections || []).forEach(sec => {
+                const div = document.createElement('div');
+                div.className = 'outline-section-item';
+                const points = (sec.key_points || []).map(p => `<span class="outline-kp">${p}</span>`).join('');
+                div.innerHTML = `
+                    <div class="outline-section-head">
+                        <span class="section-num">${sec.id}</span>
+                        <span class="outline-section-title">${sec.title}</span>
+                        ${sec.code_language ? `<span class="outline-lang">${sec.code_language}</span>` : ''}
+                    </div>
+                    <div class="outline-section-desc">${sec.description || ''}</div>
+                    ${points ? `<div class="outline-keypoints">${points}</div>` : ''}
+                `;
+                sectionsEl.appendChild(div);
+            });
+
+            panel.style.display = '';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function hideOutlinePreview() {
+            document.getElementById('outlinePreview').style.display = 'none';
+            document.getElementById('outlineCardView').style.display = '';
+            document.getElementById('outlineEditView').style.display = 'none';
+            document.getElementById('outlineActions').style.display = '';
+            cachedOutline = null;
+            cachedOutlineMd = '';
+            cachedOutlineName = '';
+        }
+
+        // ── 大纲编辑 ──────────────────────────────────
+        function enterOutlineEdit() {
+            // 如果没有缓存 md，先从后端获取
+            if (!cachedOutlineMd && cachedOutlineName) {
+                fetch(`/api/article/${cachedOutlineName}/outline-md`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.content) {
+                            cachedOutlineMd = data.content;
+                            showEditor();
+                        }
+                    });
+                return;
+            }
+            showEditor();
+        }
+
+        function showEditor() {
+            document.getElementById('outlineCardView').style.display = 'none';
+            document.getElementById('outlineEditView').style.display = '';
+            document.getElementById('outlineActions').style.display = 'none';
+            const editor = document.getElementById('outlineEditor');
+            editor.value = cachedOutlineMd;
+            const meta = document.getElementById('editOutlineMeta');
+            meta.textContent = document.getElementById('outlineMeta').textContent;
+            editor.focus();
+        }
+
+        function cancelOutlineEdit() {
+            document.getElementById('outlineCardView').style.display = '';
+            document.getElementById('outlineEditView').style.display = 'none';
+            document.getElementById('outlineActions').style.display = '';
+        }
+
+        function saveOutlineEdit() {
+            if (!cachedOutlineName) return;
+            const btn = document.getElementById('saveOutlineBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const mdContent = document.getElementById('outlineEditor').value;
+
+            fetch(`/api/article/${cachedOutlineName}/outline-md`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: mdContent })
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    alert('保存失败: ' + data.error);
+                    return;
+                }
+                cachedOutline = data.outline;
+                cachedOutlineMd = mdContent;
+                const wordCount = parseInt(document.getElementById('wordCountInput').value) || 5000;
+                showOutlinePreview(data.outline, wordCount);
+                cancelOutlineEdit();
+            }).catch(err => {
+                alert('保存失败: ' + err.message);
+            }).finally(() => {
+                btn.disabled = false;
+                btn.textContent = '保存编辑';
+            });
+        }
+
+        // ── 确认生成 ──────────────────────────────────
+        function confirmAndGenerate() {
+            if (!cachedOutline) return;
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) return;
+
+            const outline = cachedOutline;
+            hideOutlinePreview();
+
+            startGenerateWithOutline(topic, outline);
+        }
+
+        function startGenerateWithOutline(topic, outline) {
+            if (isGenerating) return;
             isGenerating = true;
+
             const btn = document.getElementById('generateBtn');
             btn.disabled = true;
             btn.textContent = '生成中...';
 
-            const maxImages = parseInt(document.getElementById('maxImages').value) || 3;
-            const progressArea = document.getElementById('progressArea');
-            progressArea.style.display = '';
+            const maxDiagrams = parseInt(document.getElementById('maxDiagrams').value) || 0;
+            const maxAiImages = parseInt(document.getElementById('maxAiImages').value) || 0;
+            const wordCount = parseInt(document.getElementById('wordCountInput').value) || 5000;
+
+            // 生成中：隐藏头部（禁用折叠），展开步骤
+            document.getElementById('progressHeader').style.display = 'none';
+            document.getElementById('progressSteps').style.display = '';
+            document.getElementById('progressResult').style.display = 'none';
             resetSteps();
 
-            // 通过 SSE 接收进度
+            // Step 1 直接标记完成
+            setStepStatus(1, 'done', `标题: ${outline.title}，共 ${outline.sections.length} 章（已确认大纲）`);
+
             fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ topic, max_images: maxImages, draft: true })
+                body: JSON.stringify({
+                    topic, max_diagrams: maxDiagrams, max_ai_images: maxAiImages,
+                    draft: true, word_count: wordCount, outline: outline
+                })
             }).then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -264,16 +571,33 @@
                 }
                 read();
             }).catch(err => {
-                setStepStatus(1, 'error', '请求失败: ' + err.message);
+                setStepStatus(2, 'error', '请求失败: ' + err.message);
                 finishGenerate();
             });
+        }
+
+        function startGenerate() {
+            const topic = document.getElementById('topicInput').value.trim();
+            if (!topic) {
+                document.getElementById('topicInput').focus();
+                return;
+            }
+            if (isGenerating || isPreviewingOutline) return;
+
+            // 已有缓存大纲且大纲预览面板可见 → 直接进入生成流程
+            if (cachedOutline && document.getElementById('outlinePreview').style.display !== 'none') {
+                startGenerateWithOutline(topic, cachedOutline);
+                return;
+            }
+
+            // 先生成大纲让用户确认
+            previewOutline();
         }
 
         function handleEvent(event) {
             const { step, status, detail, data } = event;
 
             if (step === 0 && status === 'done') {
-                // Pipeline 完成
                 const result = document.getElementById('progressResult');
                 result.style.display = '';
                 result.innerHTML = `
@@ -291,9 +615,31 @@
 
         function finishGenerate() {
             isGenerating = false;
+            cachedOutline = null;
             const btn = document.getElementById('generateBtn');
             btn.disabled = false;
             btn.textContent = '开始生成';
+            // 生成完成后显示进度区域头部（含隐藏按钮）
+            document.getElementById('progressHeader').style.display = '';
+            document.getElementById('toggleProgressBtn').textContent = '隐藏';
+        }
+
+        // ── 进度区域显隐 ──────────────────────────────
+        function toggleProgressArea() {
+            const steps = document.getElementById('progressSteps');
+            const result = document.getElementById('progressResult');
+            const btn = document.getElementById('toggleProgressBtn');
+            const isHidden = steps.style.display === 'none';
+
+            if (isHidden) {
+                steps.style.display = '';
+                if (result.innerHTML.trim()) result.style.display = '';
+                btn.textContent = '隐藏';
+            } else {
+                steps.style.display = 'none';
+                result.style.display = 'none';
+                btn.textContent = '展开';
+            }
         }
 
         // 回车触发生成
@@ -375,6 +721,153 @@
 
         // 初始化
         initCounts();
+
+        // ── 设置面板 ──────────────────────────────────
+        let settingsData = null;
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function loadSettings() {
+            const body = document.getElementById('settingsBody');
+            body.innerHTML = '<div class="settings-loading">加载中...</div>';
+
+            fetch('/api/settings').then(r => r.json()).then(data => {
+                settingsData = data.groups;
+                renderSettings(data.groups);
+            }).catch(() => {
+                body.innerHTML = '<div class="settings-loading" style="color:var(--red);">加载失败</div>';
+            });
+        }
+
+        // 存储真实值，避免 HTML 注入
+        let fieldValues = {};
+
+        function renderSettings(groups) {
+            const body = document.getElementById('settingsBody');
+            let html = '';
+            fieldValues = {};
+
+            for (const [group, fields] of Object.entries(groups)) {
+                html += `<div class="settings-group">
+                    <div class="settings-group-title">${group}</div>`;
+                for (const field of fields) {
+                    const statusClass = field.configured ? 'status-on' : 'status-off';
+                    const statusText = field.configured ? '已配置' : '未配置';
+                    const inputId = 'setting_' + field.key;
+                    const hintId = 'hint_' + field.key;
+                    const isSecret = field.type === 'password' && field.value;
+                    const displayVal = field.value || '空';
+
+                    // 存储真实值
+                    fieldValues[field.key] = { full: displayVal, masked: field.masked || '空' };
+
+                    // 值显示区域
+                    let valueHtml;
+                    if (isSecret) {
+                        valueHtml = `<code id="${hintId}">${field.masked}</code>
+                            <button class="btn btn-sm settings-toggle-val" onclick="toggleFieldValue('${field.key}')" title="显示/隐藏">  </button>`;
+                    } else {
+                        valueHtml = `<code id="${hintId}">${escapeHtml(displayVal)}</code>`;
+                    }
+
+                    if (field.type === 'textarea') {
+                        html += `<div class="settings-field">
+                            <div class="settings-field-header">
+                                <label for="${inputId}">${field.label}</label>
+                                <span class="settings-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <textarea id="${inputId}" class="settings-textarea" placeholder="留空则不修改" rows="3"></textarea>
+                            <div class="settings-field-hint">当前值：${valueHtml}</div>
+                        </div>`;
+                    } else {
+                        html += `<div class="settings-field">
+                            <div class="settings-field-header">
+                                <label for="${inputId}">${field.label}</label>
+                                <span class="settings-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <input type="${field.type}" id="${inputId}" class="settings-input" placeholder="留空则不修改" />
+                            <div class="settings-field-hint">当前值：${valueHtml}</div>
+                        </div>`;
+                    }
+                }
+                html += '</div>';
+            }
+
+            body.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function toggleFieldValue(key) {
+            const el = document.getElementById('hint_' + key);
+            const data = fieldValues[key];
+            if (!data) return;
+            const isMasked = el.textContent === data.masked;
+            el.textContent = isMasked ? data.full : data.masked;
+            // 更新按钮图标
+            const btn = el.nextElementSibling;
+            if (btn) btn.textContent = isMasked ? ' ️' : '  ';
+        }
+
+        function saveSettings() {
+            const btn = document.getElementById('saveSettingsBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const payload = {};
+            document.querySelectorAll('[id^="setting_"]').forEach(el => {
+                const key = el.id.replace('setting_', '');
+                if (el.value.trim()) {
+                    payload[key] = el.value.trim();
+                }
+            });
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    alert('保存失败: ' + data.error);
+                    return;
+                }
+                closeSettings();
+                showToast(data.message || '配置已保存');
+            }).catch(err => {
+                alert('保存失败: ' + err.message);
+            }).finally(() => {
+                btn.disabled = false;
+                btn.textContent = '保存配置';
+            });
+        }
     </script>
+
+    <!-- 设置模态框 -->
+    <div id="settingsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal settings-modal">
+            <div class="settings-header">
+                <h3>API 设置</h3>
+                <button class="btn btn-sm" onclick="closeSettings()">&#10005;</button>
+            </div>
+            <div class="settings-body" id="settingsBody">
+                <div class="settings-loading">加载中...</div>
+            </div>
+            <div class="settings-actions">
+                <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()">保存配置</button>
+                <button class="btn" onclick="closeSettings()">取消</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

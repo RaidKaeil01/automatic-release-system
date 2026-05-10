@@ -40,10 +40,14 @@ SYSTEM_PROMPT = """你是一位单片机（STM32/STC51/ESP32 等）领域的高�
 
 class WriterAgent(BaseAgent):
     def _build_context(self, outline: dict) -> str:
+        total_words = outline.get("word_count", 5000)
+        section_count = len(outline["sections"])
+        words_per_section = max(1500, total_words // section_count)
         ctx_parts = [
             f"教程标题：{outline['title']}",
             f"教程简介：{outline['description']}",
             f"标签：{', '.join(outline.get('tags', []))}",
+            f"总目标字数：{total_words} 字（共 {section_count} 章，每章约 {words_per_section} 字）",
             "",
             "章节规划：",
         ]
@@ -55,6 +59,10 @@ class WriterAgent(BaseAgent):
     def write(self, outline: dict) -> str:
         context = self._build_context(outline)
         all_markdown = []
+
+        total_words = outline.get("word_count", 5000)
+        section_count = len(outline["sections"])
+        words_per_section = max(1500, total_words // section_count)
 
         for i, section in enumerate(outline["sections"]):
             extra = ""
@@ -71,7 +79,8 @@ class WriterAgent(BaseAgent):
 - 主题：{section['description']}
 - 关键知识点：{', '.join(section['key_points'])}
 - 主要代码语言：{section.get('code_language', 'bash')}
-- 标题层级：章节标题用 ###，子节用 ####，子子节用 #####{extra}
+- 标题层级：章节标题用 ###，子节用 ####，子子节用 #####
+- 字数要求：本章目标字数约 {words_per_section} 字（不少于 {int(words_per_section * 0.7)} 字），内容要充实详细{extra}
 
 请直接输出本章的 Markdown 内容。"""
 
@@ -92,6 +101,9 @@ class WriterAgent(BaseAgent):
         """单独生成某一章，用于调试或增量更新"""
         section = next(s for s in outline["sections"] if s["id"] == section_id)
         context = self._build_context(outline)
+        total_words = outline.get("word_count", 5000)
+        section_count = len(outline["sections"])
+        words_per_section = max(1500, total_words // section_count)
         user_prompt = f"""{context}
 
 ---
@@ -103,6 +115,7 @@ class WriterAgent(BaseAgent):
 - 关键知识点：{', '.join(section['key_points'])}
 - 主要代码语言：{section.get('code_language', 'bash')}
 - 标题层级：章节标题用 ###，子节用 ####，子子节用 #####
+- 字数要求：本章目标字数约 {words_per_section} 字（不少于 {int(words_per_section * 0.7)} 字），内容要充实详细
 
 请直接输出本章的 Markdown 内容。"""
         return self.cot(SYSTEM_PROMPT, user_prompt).strip()

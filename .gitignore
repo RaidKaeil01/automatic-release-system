@@ -21,16 +21,14 @@ env/
 *.swo
 
 # 生成的文章内容（体积较大，可选择性忽略）
-output/*/images/*.png
-output/*/*.md
-output/*/*.json
+output/
 !templates/
-
-# 调试截图
-output/*.png
 
 # Playwright
 playwright-report/
+
+# Claude Code
+.claude/
 
 # OS
 Thumbs.db

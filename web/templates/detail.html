@@ -60,12 +60,25 @@
                     </ul>
                 </div>
 
-                <!-- 配图 -->
-                {% if images %}
+                <!-- 流程图 -->
+                {% if diagrams %}
                 <div class="sidebar-card">
-                    <h4>  配图 ({{ images|length }})</h4>
+                    <h4>  流程图 ({{ diagrams|length }})</h4>
                     <div class="images-grid">
-                        {% for img in images %}
+                        {% for img in diagrams %}
+                        <img src="/images/{{ name }}/{{ img }}" alt="{{ img }}" loading="lazy"
+                             onclick="window.open(this.src, '_blank')">
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- AI 配图 -->
+                {% if ai_images %}
+                <div class="sidebar-card">
+                    <h4>  AI 配图 ({{ ai_images|length }})</h4>
+                    <div class="images-grid">
+                        {% for img in ai_images %}
                         <img src="/images/{{ name }}/{{ img }}" alt="{{ img }}" loading="lazy"
                              onclick="window.open(this.src, '_blank')">
                         {% endfor %}
