@@ -157,6 +157,10 @@
                 <div class="value" id="totalCount">{{ articles|length }}</div>
             </div>
             <div class="stat-card">
+                <div class="label">总字数</div>
+                <div class="value">{{ articles|map(attribute='word_count')|sum }}</div>
+            </div>
+            <div class="stat-card">
                 <div class="label">配图总数</div>
                 <div class="value">{{ articles|map(attribute='image_count')|sum }}</div>
             </div>
@@ -211,6 +215,7 @@
                 <div class="desc">{{ article.description }}</div>
                 <div class="meta">
                     <span>{{ article.sections_count }} 章</span>
+                    <span class="meta-words">{{ article.word_count }} 字</span>
                     {% if article.diagram_count > 0 %}
                     <span class="meta-diagram">{{ article.diagram_count }} 流程图</span>
                     {% endif %}

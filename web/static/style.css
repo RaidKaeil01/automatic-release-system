@@ -607,6 +607,9 @@ a:hover { text-decoration: underline; }
 .meta-ai {
     color: #b07cff !important;
 }
+.meta-words {
+    color: #50c878 !important;
+}
 .article-card .tags {
     display: flex;
     flex-wrap: wrap;
@@ -630,6 +633,24 @@ a:hover { text-decoration: underline; }
 }
 .detail-header h2 { font-size: 22px; margin-bottom: 8px; }
 .detail-header .desc { color: var(--text2); margin-bottom: 16px; }
+.detail-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.stat-item {
+    font-size: 13px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stat-value {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 15px;
+}
 .detail-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .detail-layout {

@@ -24,6 +24,13 @@
         <div class="detail-header">
             <h2>{{ outline.title }}</h2>
             <div class="desc">{{ outline.description }}</div>
+            <div class="detail-stats">
+                <span class="stat-item"><span class="stat-value">{{ word_count }}</span> 字</span>
+                <span class="stat-item"><span class="stat-value">{{ char_count }}</span> 字符</span>
+                <span class="stat-item"><span class="stat-value">{{ outline.sections|length }}</span> 章</span>
+                <span class="stat-item"><span class="stat-value">{{ diagrams|length }}</span> 流程图</span>
+                <span class="stat-item"><span class="stat-value">{{ ai_images|length }}</span> AI图</span>
+            </div>
             <div class="tags" style="margin-bottom:16px;">
                 {% for tag in outline.tags %}
                 <span class="tag">{{ tag }}</span>

@@ -51,6 +51,21 @@ def get_articles() -> list[dict]:
         # 检查是否已发布到 CSDN（通过检查是否有 tutorial_final.md）
         has_final = (d / "tutorial_final.md").exists()
 
+        # 统计字数/字符数
+        md_file = d / "tutorial_final.md"
+        if not md_file.exists():
+            md_file = d / "tutorial.md"
+        char_count = 0
+        word_count = 0
+        if md_file.exists():
+            content = md_file.read_text(encoding="utf-8")
+            char_count = len(content)
+            # 中文按字数统计：中文字符 + 英文单词数
+            import re
+            chinese_chars = len(re.findall(r'[一-鿿]', content))
+            english_words = len(re.findall(r'[a-zA-Z]+', content))
+            word_count = chinese_chars + english_words
+
         articles.append({
             "name": d.name,
             "title": outline.get("title", d.name),
@@ -61,6 +76,8 @@ def get_articles() -> list[dict]:
             "diagram_count": diagram_count,
             "ai_count": ai_count,
             "has_final": has_final,
+            "char_count": char_count,
+            "word_count": word_count,
         })
 
     return articles
@@ -117,6 +134,13 @@ def article_detail(name):
                     ai_images.append(f.name)
     images = diagrams + ai_images
 
+    # 统计字数/字符数
+    import re
+    char_count = len(md_content)
+    chinese_chars = len(re.findall(r'[一-鿿]', md_content))
+    english_words = len(re.findall(r'[a-zA-Z]+', md_content))
+    word_count = chinese_chars + english_words
+
     html_content = markdown.markdown(
         md_content,
         extensions=["fenced_code", "tables", "toc", "codehilite"],
@@ -134,6 +158,8 @@ def article_detail(name):
         images=images,
         diagrams=diagrams,
         ai_images=ai_images,
+        char_count=char_count,
+        word_count=word_count,
     )
 
 
