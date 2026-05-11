@@ -226,7 +226,7 @@ def run_pipeline(topic: str, skip_publish: bool = False, save_as_draft: bool = T
 def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int = 0,
                         word_count: int = 5000, outline: dict = None,
                         max_diagrams: int = 0, max_ai_images: int = 0,
-                        style: str = "detailed"):
+                        style: str = "detailed", output_mode: str = "local"):
     """流式版本的 pipeline，yield 进度事件供 SSE 使用
 
     Args:
@@ -238,6 +238,7 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
         max_diagrams: 流程图数量限制（0=不限制）
         max_ai_images: AI 图片数量限制（0=不限制）
         style: 文章风格 "detailed"（详细）或 "concise"（精简）
+        output_mode: 输出方式 "local"（本地）/ "draft"（草稿）/ "publish"（发布）
     """
     output_dir = Path("output") / topic.replace(" ", "_").replace("/", "_")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -311,9 +312,33 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
         yield emit(3, "error", f"配图生成失败: {str(e)}")
         return
 
-    # ── Step 4: 输出处理（等待用户选择） ──
-    yield emit(4, "waiting", "内容已就绪，请选择输出方式",
-               {"name": output_dir.name, "title": outline["title"]})
+    # ── Step 4: 输出处理 ──
+    if output_mode == "local":
+        yield emit(4, "done", "已保存到本地",
+                   {"name": output_dir.name, "title": outline["title"], "action": "已保存到本地"})
+    else:
+        action_name = "保存草稿" if output_mode == "draft" else "发布"
+        yield emit(4, "running", f"正在{action_name}到 CSDN...")
+        try:
+            publisher = PublisherAgent()
+            if output_mode == "draft":
+                result = publisher.save_draft(
+                    final_md, title=outline["title"], tags=outline.get("tags"),
+                    md_dir=str(output_dir),
+                )
+            else:
+                result = publisher.publish(
+                    final_md, title=outline["title"], tags=outline.get("tags"),
+                    md_dir=str(output_dir),
+                )
+            yield emit(4, "done", result,
+                       {"name": output_dir.name, "title": outline["title"], "action": f"{action_name}成功", "url": result})
+        except Exception as e:
+            yield emit(4, "error", f"{action_name}失败: {str(e)}")
+            return
+
+    yield emit(0, "done", "Pipeline 完成!",
+               {"name": output_dir.name, "title": outline["title"], "action": ""})
 
 
 if __name__ == "__main__":

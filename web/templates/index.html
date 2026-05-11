@@ -68,7 +68,18 @@
                             <span class="wc-hint">字</span>
                         </div>
                     </div>
-                    <div class="form-hint">输入主题后点击「开始生成」，AI 先生成大纲供你确认，确认后再编写内容、生成配图并保存到 CSDN 草稿。流程图和 AI 配图数量设为 0 则由内容自动决定。</div>
+                    <div class="form-row">
+                        <div class="output-mode-selector">
+                            <label class="wc-label">输出方式</label>
+                            <div class="style-toggle">
+                                <button type="button" class="output-btn active" data-mode="local" onclick="setOutputMode('local', this)">  保存本地</button>
+                                <button type="button" class="output-btn" data-mode="draft" onclick="setOutputMode('draft', this)">  保存草稿</button>
+                                <button type="button" class="output-btn" data-mode="publish" onclick="setOutputMode('publish', this)">  直接发布</button>
+                            </div>
+                            <span class="style-hint" id="outputHint">文件保存到本地 output 目录</span>
+                        </div>
+                    </div>
+                    <div class="form-hint">输入主题后点击「开始生成」，AI 先生成大纲供你确认，确认后生成内容和配图。默认保存到本地，也可选择自动保存草稿或发布到 CSDN。</div>
                 </div>
 
                 <!-- 大纲预览区域 -->
@@ -362,11 +373,27 @@
                 : '完整讲解原理、代码、调试';
         }
 
+        // ── 输出方式选择 ──────────────────────────────────
+        let outputMode = 'local';
+
+        const OUTPUT_HINTS = {
+            local: '文件保存到本地 output 目录',
+            draft: '生成后自动保存为 CSDN 草稿',
+            publish: '生成后自动发布到 CSDN',
+        };
+
+        function setOutputMode(mode, btn) {
+            outputMode = mode;
+            document.querySelectorAll('.output-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('outputHint').textContent = OUTPUT_HINTS[mode] || '';
+        }
+
         const DEFAULT_DETAILS = [
             '根据主题生成教程大纲，确认后继续',
             '逐章节编写 Markdown 教程正文',
             '生成流程图（Mermaid）和 AI 配图（即梦）',
-            '选择保存本地、保存草稿或发布到 CSDN',
+            '按预设方式输出（本地 / 草稿 / 发布）',
         ];
 
         function resetSteps() {
@@ -579,7 +606,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     topic, max_diagrams: maxDiagrams, max_ai_images: maxAiImages,
-                    draft: true, word_count: wordCount, outline: outline, style: currentStyle
+                    draft: true, word_count: wordCount, outline: outline,
+                    style: currentStyle, output_mode: outputMode
                 })
             }).then(response => {
                 const reader = response.body.getReader();

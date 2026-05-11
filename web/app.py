@@ -264,6 +264,7 @@ def api_generate():
     word_count = data.get("word_count", 5000)
     outline = data.get("outline")  # 可选：已确认的大纲
     style = data.get("style", "detailed")  # "detailed" 或 "concise"
+    output_mode = data.get("output_mode", "local")  # "local" / "draft" / "publish"
 
     from main import run_pipeline_stream
 
@@ -275,7 +276,7 @@ def api_generate():
                 topic, save_as_draft=save_as_draft, max_images=max_images,
                 word_count=word_count, outline=outline,
                 max_diagrams=max_diagrams, max_ai_images=max_ai_images,
-                style=style
+                style=style, output_mode=output_mode
             ):
                 q.put(event)
         except Exception as e:
