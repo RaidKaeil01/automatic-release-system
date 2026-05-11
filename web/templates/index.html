@@ -150,9 +150,17 @@
                         <div class="progress-step" id="step4">
                             <div class="step-icon">4</div>
                             <div class="step-info">
-                                <div class="step-title">保存草稿</div>
-                                <div class="step-detail" id="step4-detail">上传到 CSDN 保存为草稿</div>
+                                <div class="step-title">输出处理</div>
+                                <div class="step-detail" id="step4-detail">选择保存方式</div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="output-actions" id="outputActions" style="display:none;">
+                        <div class="output-actions-title">请选择输出方式：</div>
+                        <div class="output-actions-btns">
+                            <button class="btn" onclick="doOutput('local')">  保存本地</button>
+                            <button class="btn" onclick="doOutput('draft')">  保存草稿到 CSDN</button>
+                            <button class="btn btn-primary" onclick="doOutput('publish')">  发布到 CSDN</button>
                         </div>
                     </div>
                     <div class="progress-result" id="progressResult" style="display:none;"></div>
@@ -358,7 +366,7 @@
             '根据主题生成教程大纲，确认后继续',
             '逐章节编写 Markdown 教程正文',
             '生成流程图（Mermaid）和 AI 配图（即梦）',
-            '上传到 CSDN 保存为草稿',
+            '选择保存本地、保存草稿或发布到 CSDN',
         ];
 
         function resetSteps() {
@@ -367,6 +375,7 @@
                 step.className = 'progress-step';
                 document.getElementById(`step${i}-detail`).textContent = DEFAULT_DETAILS[i - 1];
             }
+            document.getElementById('outputActions').style.display = 'none';
             document.getElementById('progressResult').style.display = 'none';
             document.getElementById('progressResult').innerHTML = '';
         }
@@ -623,15 +632,27 @@
             previewOutline();
         }
 
+        let pendingArticleName = '';
+        let pendingArticleTitle = '';
+
         function handleEvent(event) {
             const { step, status, detail, data } = event;
+
+            if (step === 4 && status === 'waiting') {
+                // 内容已就绪，显示输出选项
+                pendingArticleName = data.name;
+                pendingArticleTitle = data.title;
+                setStepStatus(4, 'done', '内容已就绪，请选择输出方式');
+                document.getElementById('outputActions').style.display = '';
+                return;
+            }
 
             if (step === 0 && status === 'done') {
                 const result = document.getElementById('progressResult');
                 result.style.display = '';
                 result.innerHTML = `
                     <div class="result-success">
-                        文章「${data.title}」生成完成！
+                        文章「${data.title}」${data.action || '处理完成'}！
                         <a href="/article/${data.name}" class="btn btn-sm btn-primary" style="margin-left:12px;">查看文章</a>
                     </div>`;
                 return;
@@ -640,6 +661,55 @@
             if (step > 0) {
                 setStepStatus(step, status, detail);
             }
+        }
+
+        function doOutput(action) {
+            const actionsDiv = document.getElementById('outputActions');
+            const btns = actionsDiv.querySelectorAll('button');
+            btns.forEach(b => b.disabled = true);
+
+            if (action === 'local') {
+                // 保存本地：已自动保存，直接显示成功
+                actionsDiv.style.display = 'none';
+                const result = document.getElementById('progressResult');
+                result.style.display = '';
+                result.innerHTML = `
+                    <div class="result-success">
+                        文章「${pendingArticleTitle}」已保存到本地！
+                        <a href="/article/${pendingArticleName}" class="btn btn-sm btn-primary" style="margin-left:12px;">查看文章</a>
+                    </div>`;
+                finishGenerate();
+                return;
+            }
+
+            // CSDN 操作
+            const apiAction = action === 'draft' ? '保存草稿' : '发布';
+            setStepStatus(4, 'running', `正在${apiAction}到 CSDN...`);
+
+            fetch(`/api/article/${pendingArticleName}/publish`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ draft: action === 'draft' })
+            }).then(r => r.json()).then(data => {
+                actionsDiv.style.display = 'none';
+                if (data.error) {
+                    setStepStatus(4, 'error', `${apiAction}失败: ${data.error}`);
+                } else {
+                    setStepStatus(4, 'done', data.message || `${apiAction}成功`);
+                    const result = document.getElementById('progressResult');
+                    result.style.display = '';
+                    result.innerHTML = `
+                        <div class="result-success">
+                            文章「${pendingArticleTitle}」${apiAction}成功！
+                            <a href="/article/${pendingArticleName}" class="btn btn-sm btn-primary" style="margin-left:12px;">查看文章</a>
+                        </div>`;
+                }
+                finishGenerate();
+            }).catch(err => {
+                actionsDiv.style.display = 'none';
+                setStepStatus(4, 'error', `请求失败: ${err.message}`);
+                finishGenerate();
+            });
         }
 
         function finishGenerate() {

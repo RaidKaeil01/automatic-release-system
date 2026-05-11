@@ -516,6 +516,26 @@ a:hover { text-decoration: underline; }
 }
 .progress-step.error .step-detail { color: var(--red); }
 
+/* 输出选项 */
+.output-actions {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+.output-actions-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--text);
+}
+.output-actions-btns {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 /* 结果 */
 .progress-result { margin-top: 12px; }
 .result-success {

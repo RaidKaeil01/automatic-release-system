@@ -311,26 +311,8 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
         yield emit(3, "error", f"配图生成失败: {str(e)}")
         return
 
-    # ── Step 4: 发布/保存草稿 ──
-    yield emit(4, "running", "正在上传到 CSDN..." if not save_as_draft else "正在保存草稿到 CSDN...")
-    try:
-        publisher = PublisherAgent()
-        if save_as_draft:
-            result = publisher.save_draft(
-                final_md, title=outline["title"], tags=outline.get("tags"),
-                md_dir=str(output_dir),
-            )
-        else:
-            result = publisher.publish(
-                final_md, title=outline["title"], tags=outline.get("tags"),
-                md_dir=str(output_dir),
-            )
-        yield emit(4, "done", result, {"url": result})
-    except Exception as e:
-        yield emit(4, "error", f"发布失败: {str(e)}")
-        return
-
-    yield emit(0, "done", "Pipeline 完成!",
+    # ── Step 4: 输出处理（等待用户选择） ──
+    yield emit(4, "waiting", "内容已就绪，请选择输出方式",
                {"name": output_dir.name, "title": outline["title"]})
 
 
