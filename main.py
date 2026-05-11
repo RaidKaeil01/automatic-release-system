@@ -106,10 +106,10 @@ def parse_outline_markdown(md_text: str, word_count: int = 5000) -> dict:
     return outline
 
 
-def generate_outline(topic: str, word_count: int = 5000, output_dir: Path = None) -> dict:
+def generate_outline(topic: str, word_count: int = 5000, output_dir: Path = None, style: str = "detailed") -> dict:
     """只生成大纲，返回 outline dict，同时保存 json 和 md"""
     planner = PlannerAgent()
-    outline = planner.plan(topic, word_count=word_count)
+    outline = planner.plan(topic, word_count=word_count, style=style)
 
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -123,7 +123,7 @@ def generate_outline(topic: str, word_count: int = 5000, output_dir: Path = None
     return outline
 
 
-def continue_pipeline(outline: dict, topic: str, save_as_draft: bool = True, max_images: int = 0):
+def continue_pipeline(outline: dict, topic: str, save_as_draft: bool = True, max_images: int = 0, style: str = "detailed"):
     """从已确认的大纲继续执行 pipeline（Step 2-4）"""
     output_dir = Path("output") / topic.replace(" ", "_").replace("/", "_")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -137,7 +137,7 @@ def continue_pipeline(outline: dict, topic: str, save_as_draft: bool = True, max
     # Step 2: 内容生成
     console.print(Panel("[bold cyan]Step 2: 生成教程内容[/bold cyan]"))
     writer = WriterAgent()
-    markdown = writer.write(outline)
+    markdown = writer.write(outline, style=style)
     md_path = output_dir / "tutorial.md"
     md_path.write_text(markdown, encoding="utf-8")
     console.print(f"  Markdown 已保存: {md_path} ({len(markdown)} 字符)")
@@ -161,16 +161,16 @@ def continue_pipeline(outline: dict, topic: str, save_as_draft: bool = True, max
     return str(final_path)
 
 
-def run_pipeline(topic: str, skip_publish: bool = False, save_as_draft: bool = True, max_images: int = 0, word_count: int = 5000):
+def run_pipeline(topic: str, skip_publish: bool = False, save_as_draft: bool = True, max_images: int = 0, word_count: int = 5000, style: str = "detailed"):
     output_dir = Path("output") / topic.replace(" ", "_").replace("/", "_")
     output_dir.mkdir(parents=True, exist_ok=True)
     images_dir = output_dir / "images"
     images_dir.mkdir(exist_ok=True)
 
     # ── Step 1: 规划 ──
-    console.print(Panel(f"[bold cyan]Step 1: 规划教程大纲（目标 {word_count} 字）[/bold cyan]"))
+    console.print(Panel(f"[bold cyan]Step 1: 规划教程大纲（目标 {word_count} 字，{'精简' if style == 'concise' else '详细'}模式）[/bold cyan]"))
     planner = PlannerAgent()
-    outline = planner.plan(topic, word_count=word_count)
+    outline = planner.plan(topic, word_count=word_count, style=style)
     outline_path = output_dir / "outline.json"
     outline_path.write_text(json.dumps(outline, ensure_ascii=False, indent=2), encoding="utf-8")
     (output_dir / "outline.md").write_text(outline_to_markdown(outline), encoding="utf-8")
@@ -181,7 +181,7 @@ def run_pipeline(topic: str, skip_publish: bool = False, save_as_draft: bool = T
     # ── Step 2: 内容生成 ──
     console.print(Panel("[bold cyan]Step 2: 生成教程内容[/bold cyan]"))
     writer = WriterAgent()
-    markdown = writer.write(outline)
+    markdown = writer.write(outline, style=style)
     md_path = output_dir / "tutorial.md"
     md_path.write_text(markdown, encoding="utf-8")
     console.print(f"  Markdown 已保存: {md_path} ({len(markdown)} 字符)")
@@ -225,7 +225,8 @@ def run_pipeline(topic: str, skip_publish: bool = False, save_as_draft: bool = T
 
 def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int = 0,
                         word_count: int = 5000, outline: dict = None,
-                        max_diagrams: int = 0, max_ai_images: int = 0):
+                        max_diagrams: int = 0, max_ai_images: int = 0,
+                        style: str = "detailed"):
     """流式版本的 pipeline，yield 进度事件供 SSE 使用
 
     Args:
@@ -236,6 +237,7 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
         outline: 已确认的大纲（跳过 Step 1）
         max_diagrams: 流程图数量限制（0=不限制）
         max_ai_images: AI 图片数量限制（0=不限制）
+        style: 文章风格 "detailed"（详细）或 "concise"（精简）
     """
     output_dir = Path("output") / topic.replace(" ", "_").replace("/", "_")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -255,10 +257,11 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
         yield emit(1, "done", f"标题: {outline['title']}，共 {len(outline['sections'])} 章（使用已确认大纲）",
                    {"title": outline["title"], "sections": len(outline["sections"])})
     else:
-        yield emit(1, "running", f"正在规划教程大纲（目标 {word_count} 字）...")
+        style_label = "精简" if style == "concise" else "详细"
+        yield emit(1, "running", f"正在规划教程大纲（目标 {word_count} 字，{style_label}模式）...")
         try:
             planner = PlannerAgent()
-            outline = planner.plan(topic, word_count=word_count)
+            outline = planner.plan(topic, word_count=word_count, style=style)
             outline_path = output_dir / "outline.json"
             outline_path.write_text(json.dumps(outline, ensure_ascii=False, indent=2), encoding="utf-8")
             (output_dir / "outline.md").write_text(outline_to_markdown(outline), encoding="utf-8")
@@ -272,7 +275,7 @@ def run_pipeline_stream(topic: str, save_as_draft: bool = True, max_images: int 
     yield emit(2, "running", "正在生成教程内容...")
     try:
         writer = WriterAgent()
-        markdown = writer.write(outline)
+        markdown = writer.write(outline, style=style)
         md_path = output_dir / "tutorial.md"
         md_path.write_text(markdown, encoding="utf-8")
         yield emit(2, "done", f"已生成 {len(markdown)} 字符的 Markdown 内容",

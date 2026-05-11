@@ -263,6 +263,7 @@ def api_generate():
     save_as_draft = data.get("draft", True)
     word_count = data.get("word_count", 5000)
     outline = data.get("outline")  # 可选：已确认的大纲
+    style = data.get("style", "detailed")  # "detailed" 或 "concise"
 
     from main import run_pipeline_stream
 
@@ -273,7 +274,8 @@ def api_generate():
             for event in run_pipeline_stream(
                 topic, save_as_draft=save_as_draft, max_images=max_images,
                 word_count=word_count, outline=outline,
-                max_diagrams=max_diagrams, max_ai_images=max_ai_images
+                max_diagrams=max_diagrams, max_ai_images=max_ai_images,
+                style=style
             ):
                 q.put(event)
         except Exception as e:
@@ -304,12 +306,13 @@ def api_outline_generate():
         return jsonify({"error": "请输入主题"}), 400
 
     word_count = data.get("word_count", 5000)
+    style = data.get("style", "detailed")
     output_dir = OUTPUT_DIR / topic.replace(" ", "_").replace("/", "_")
 
     from main import generate_outline, outline_to_markdown
 
     try:
-        outline = generate_outline(topic, word_count=word_count, output_dir=output_dir)
+        outline = generate_outline(topic, word_count=word_count, output_dir=output_dir, style=style)
         md_content = outline_to_markdown(outline)
         return jsonify({"outline": outline, "outline_md": md_content, "name": output_dir.name})
     except Exception as e:
