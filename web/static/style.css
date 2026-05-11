@@ -599,8 +599,14 @@ a:hover { text-decoration: underline; }
     font-size: 12px;
     color: var(--text2);
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 .article-card .meta span { display: flex; align-items: center; gap: 4px; }
+.meta-time {
+    width: 100%;
+    font-size: 11px;
+    color: var(--text3, #888) !important;
+}
 .meta-diagram {
     color: #5ba8ff !important;
 }

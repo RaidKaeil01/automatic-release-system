@@ -1,8 +1,10 @@
 import json
 import queue
+import re
 import shutil
 import sys
 import threading
+from datetime import datetime
 from pathlib import Path
 
 import markdown
@@ -26,7 +28,7 @@ def get_articles() -> list[dict]:
     if not OUTPUT_DIR.exists():
         return articles
 
-    for d in sorted(OUTPUT_DIR.iterdir()):
+    for d in OUTPUT_DIR.iterdir():
         if not d.is_dir():
             continue
         outline_path = d / "outline.json"
@@ -61,10 +63,12 @@ def get_articles() -> list[dict]:
             content = md_file.read_text(encoding="utf-8")
             char_count = len(content)
             # 中文按字数统计：中文字符 + 英文单词数
-            import re
             chinese_chars = len(re.findall(r'[一-鿿]', content))
             english_words = len(re.findall(r'[a-zA-Z]+', content))
             word_count = chinese_chars + english_words
+
+        # 获取创建时间（使用目录修改时间）
+        created_at = datetime.fromtimestamp(d.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
 
         articles.append({
             "name": d.name,
@@ -78,8 +82,11 @@ def get_articles() -> list[dict]:
             "has_final": has_final,
             "char_count": char_count,
             "word_count": word_count,
+            "created_at": created_at,
         })
 
+    # 按时间倒序排列（最新的在前面）
+    articles.sort(key=lambda x: x["created_at"], reverse=True)
     return articles
 
 
