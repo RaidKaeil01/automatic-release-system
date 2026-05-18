@@ -381,12 +381,13 @@ ENV_PATH = PROJECT_ROOT / ".env"
 
 # 定义需要管理的配置项
 SETTINGS_FIELDS = [
-    {"key": "MIMO_API_KEY", "label": "MIMO API Key", "group": "MIMO LLM", "type": "password"},
-    {"key": "MIMO_BASE_URL", "label": "MIMO Base URL", "group": "MIMO LLM", "type": "text"},
-    {"key": "MIMO_MODEL", "label": "MIMO 模型", "group": "MIMO LLM", "type": "text"},
-    {"key": "JIMENG_AK", "label": "即梦 Access Key", "group": "即梦 AI 图片", "type": "password"},
-    {"key": "JIMENG_SK", "label": "即梦 Secret Key", "group": "即梦 AI 图片", "type": "password"},
-    {"key": "CSDN_COOKIE", "label": "CSDN Cookie", "group": "CSDN 发布", "type": "textarea"},
+    {"key": "MIMO_API_KEY", "label": "MIMO API Key", "group": "  MIMO LLM", "type": "password"},
+    {"key": "MIMO_BASE_URL", "label": "MIMO Base URL", "group": "  MIMO LLM", "type": "text"},
+    {"key": "MIMO_MODEL", "label": "MIMO 模型", "group": "  MIMO LLM", "type": "text"},
+    {"key": "JIMENG_AK", "label": "即梦 Access Key", "group": "  即梦 AI 图片", "type": "password"},
+    {"key": "JIMENG_SK", "label": "即梦 Secret Key", "group": "  即梦 AI 图片", "type": "password"},
+    {"key": "CSDN_COOKIE", "label": "CSDN Cookie", "group": " CSDN 发布", "type": "textarea"},
+    {"key": "TOUTIAO_COOKIE", "label": "今日头条 Cookie", "group": " 今日头条", "type": "textarea"},
 ]
 
 

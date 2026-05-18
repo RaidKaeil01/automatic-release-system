@@ -162,6 +162,67 @@ a:hover { text-decoration: underline; }
     margin-left: 4px;
 }
 
+/* ── 平台选择 ──────────────────────────────────────── */
+.platform-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.platform-tabs {
+    display: flex;
+    gap: 8px;
+}
+.platform-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    user-select: none;
+    font-size: 13px;
+}
+.platform-btn:hover:not(.disabled) {
+    border-color: var(--text2);
+    color: var(--text);
+}
+.platform-btn:active:not(.disabled) {
+    transform: scale(0.96);
+}
+.platform-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(91, 138, 245, 0.35);
+    font-weight: 500;
+    animation: selectPulse 0.4s ease-out;
+}
+.platform-btn.active:hover {
+    background: var(--accent2);
+    border-color: var(--accent2);
+}
+.platform-btn.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.platform-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+.platform-badge {
+    font-size: 10px;
+    background: var(--tag-bg);
+    color: var(--text2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
 /* ── 风格/输出选择 ──────────────────────────────────── */
 .style-selector,
 .output-mode-selector {
@@ -943,6 +1004,23 @@ a:hover { text-decoration: underline; }
     margin-bottom: 10px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.settings-group-badge {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    background: var(--tag-bg);
+    color: var(--text2);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.settings-group-disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 .settings-field {
     margin-bottom: 14px;
