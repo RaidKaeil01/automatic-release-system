@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日头条 · 生活妙招管理</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="toutiao-theme">
+    <nav class="navbar toutiao-navbar">
+        <div class="navbar-brand">
+            <h1><span class="brand-icon"> </span> 今日头条 · 生活妙招</h1>
+            <span class="brand-sub">分享实用生活技巧</span>
+        </div>
+        <div class="navbar-actions">
+            <a href="/" class="btn btn-outline">  CSDN 教程</a>
+            <button class="theme-toggle" onclick="openSettings()" title="API 设置">
+                &#9881;
+            </button>
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题">
+                <span class="icon-sun">&#9728;</span>
+                <span class="icon-moon">&#9790;</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 即将上线提示 -->
+        <div class="coming-soon-banner">
+            <div class="coming-soon-icon"> </div>
+            <div class="coming-soon-content">
+                <h2>功能开发中</h2>
+                <p>今日头条发布功能即将上线，敬请期待！</p>
+                <p class="coming-soon-desc">支持一键生成生活妙招类文章并发布到今日头条平台</p>
+            </div>
+            <div class="coming-soon-features">
+                <div class="feature-card">
+                    <div class="feature-icon">✍️</div>
+                    <div class="feature-title">AI 生成</div>
+                    <div class="feature-desc">自动生成生活妙招类文章</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"> </div>
+                    <div class="feature-title">智能配图</div>
+                    <div class="feature-desc">匹配生活场景的配图</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"> </div>
+                    <div class="feature-title">一键发布</div>
+                    <div class="feature-desc">直接发布到今日头条</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览：分类标签 -->
+        <div class="preview-section">
+            <h3 class="section-title">内容分类（预览）</h3>
+            <div class="category-preview">
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">厨房妙招</span>
+                    <span class="category-count">—</span>
+                </div>
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">清洁技巧</span>
+                    <span class="category-count">—</span>
+                </div>
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">收纳整理</span>
+                    <span class="category-count">—</span>
+                </div>
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">家居维修</span>
+                    <span class="category-count">—</span>
+                </div>
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">健康养生</span>
+                    <span class="category-count">—</span>
+                </div>
+                <div class="category-card disabled">
+                    <span class="category-emoji"> </span>
+                    <span class="category-name">省钱攻略</span>
+                    <span class="category-count">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览：生成面板 -->
+        <div class="preview-section">
+            <h3 class="section-title">文章生成（预览）</h3>
+            <div class="generate-preview">
+                <div class="preview-form">
+                    <div class="preview-row">
+                        <div class="preview-input"></div>
+                        <div class="preview-btn"></div>
+                    </div>
+                    <div class="preview-hint">输入生活妙招主题，如「厨房油污清洁」「衣物去渍」「收纳空间利用」</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置模态框（复用 CSDN 的） -->
+    <div id="settingsModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal settings-modal">
+            <div class="settings-header">
+                <h3>API 设置</h3>
+                <button class="btn btn-sm" onclick="closeSettings()">&#10005;</button>
+            </div>
+            <div class="settings-body" id="settingsBody">
+                <div class="settings-loading">加载中...</div>
+            </div>
+            <div class="settings-actions">
+                <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()">保存配置</button>
+                <button class="btn" onclick="closeSettings()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── 主题切换 ──────────────────────────────────
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.getAttribute('data-theme') !== 'light';
+            body.setAttribute('data-theme', isDark ? 'light' : '');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+
+        // 初始化主题
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') document.body.setAttribute('data-theme', 'light');
+        })();
+
+        // ── 设置面板（复用 CSDN 的逻辑）──────────────
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function loadSettings() {
+            const body = document.getElementById('settingsBody');
+            body.innerHTML = '<div class="settings-loading">加载中...</div>';
+
+            fetch('/api/settings').then(r => r.json()).then(data => {
+                renderSettings(data.groups);
+            }).catch(() => {
+                body.innerHTML = '<div class="settings-loading" style="color:var(--red);">加载失败</div>';
+            });
+        }
+
+        let fieldValues = {};
+
+        function renderSettings(groups) {
+            const body = document.getElementById('settingsBody');
+            let html = '';
+            fieldValues = {};
+
+            for (const [group, fields] of Object.entries(groups)) {
+                const isComingSoon = group.includes('今日头条');
+                const groupBadge = isComingSoon ? '<span class="settings-group-badge">即将上线</span>' : '';
+                html += `<div class="settings-group${isComingSoon ? ' settings-group-disabled' : ''}">
+                    <div class="settings-group-title">${group}${groupBadge}</div>`;
+                for (const field of fields) {
+                    const statusClass = field.configured ? 'status-on' : 'status-off';
+                    const statusText = field.configured ? '已配置' : '未配置';
+                    const inputId = 'setting_' + field.key;
+                    const hintId = 'hint_' + field.key;
+                    const isSecret = field.type === 'password' && field.value;
+                    const displayVal = field.value || '空';
+
+                    fieldValues[field.key] = { full: displayVal, masked: field.masked || '空' };
+
+                    let valueHtml;
+                    if (isSecret) {
+                        valueHtml = `<code id="${hintId}">${field.masked}</code>
+                            <button class="btn btn-sm settings-toggle-val" onclick="toggleFieldValue('${field.key}')" title="显示/隐藏">  </button>`;
+                    } else {
+                        valueHtml = `<code id="${hintId}">${escapeHtml(displayVal)}</code>`;
+                    }
+
+                    if (field.type === 'textarea') {
+                        html += `<div class="settings-field">
+                            <div class="settings-field-header">
+                                <label for="${inputId}">${field.label}</label>
+                                <span class="settings-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <textarea id="${inputId}" class="settings-textarea" placeholder="留空则不修改" rows="3"></textarea>
+                            <div class="settings-field-hint">当前值：${valueHtml}</div>
+                        </div>`;
+                    } else {
+                        html += `<div class="settings-field">
+                            <div class="settings-field-header">
+                                <label for="${inputId}">${field.label}</label>
+                                <span class="settings-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <input type="${field.type}" id="${inputId}" class="settings-input" placeholder="留空则不修改" />
+                            <div class="settings-field-hint">当前值：${valueHtml}</div>
+                        </div>`;
+                    }
+                }
+                html += '</div>';
+            }
+
+            body.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function toggleFieldValue(key) {
+            const el = document.getElementById('hint_' + key);
+            const data = fieldValues[key];
+            if (!data) return;
+            const isMasked = el.textContent === data.masked;
+            el.textContent = isMasked ? data.full : data.masked;
+            const btn = el.nextElementSibling;
+            if (btn) btn.textContent = isMasked ? ' ️' : '  ';
+        }
+
+        function saveSettings() {
+            const btn = document.getElementById('saveSettingsBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+
+            const payload = {};
+            document.querySelectorAll('[id^="setting_"]').forEach(el => {
+                const key = el.id.replace('setting_', '');
+                if (el.value.trim()) {
+                    payload[key] = el.value.trim();
+                }
+            });
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    alert('保存失败: ' + data.error);
+                    return;
+                }
+                closeSettings();
+                loadSettings();
+            }).catch(() => {
+                alert('保存失败');
+            }).finally(() => {
+                btn.disabled = false;
+                btn.textContent = '保存配置';
+            });
+        }
+    </script>
+</body>
+</html>

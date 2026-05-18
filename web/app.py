@@ -107,6 +107,11 @@ def index():
     return render_template("index.html", articles=articles)
 
 
+@app.route("/toutiao")
+def toutiao():
+    return render_template("toutiao.html")
+
+
 @app.route("/article/<name>")
 def article_detail(name):
     article_dir = get_article_dir(name)

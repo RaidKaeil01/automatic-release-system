@@ -10,6 +10,7 @@
     <nav class="navbar">
         <h1><span>CSDN</span> 教程管理</h1>
         <div class="navbar-actions">
+            <a href="/toutiao" class="btn btn-sm" style="font-size:12px;">  今日头条</a>
             <span style="color:var(--text2);font-size:13px;" id="countDisplay">{{ articles|length }} 篇文章</span>
             <button class="theme-toggle" onclick="openSettings()" title="API 设置">
                 &#9881;
@@ -69,36 +70,17 @@
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="platform-selector">
-                            <label class="wc-label">发布平台</label>
-                            <div class="platform-tabs" id="platformTabs">
-                                <button type="button" class="platform-btn active" data-platform="local" onclick="selectPlatform('local', this)">
-                                    <span class="platform-icon"> </span>
-                                    <span class="platform-name">仅本地</span>
-                                </button>
-                                <button type="button" class="platform-btn" data-platform="csdn" onclick="selectPlatform('csdn', this)">
-                                    <span class="platform-icon"> </span>
-                                    <span class="platform-name">CSDN</span>
-                                </button>
-                                <button type="button" class="platform-btn disabled" data-platform="toutiao" disabled>
-                                    <span class="platform-icon"> </span>
-                                    <span class="platform-name">今日头条</span>
-                                    <span class="platform-badge">即将上线</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-row" id="publishModeRow" style="display:none;">
                         <div class="output-mode-selector">
-                            <label class="wc-label">发布方式</label>
-                            <div class="style-toggle" id="publishModeToggle">
-                                <button type="button" class="output-btn active" data-mode="draft" onclick="setPublishMode('draft', this)">  保存草稿</button>
-                                <button type="button" class="output-btn" data-mode="publish" onclick="setPublishMode('publish', this)">  直接发布</button>
+                            <label class="wc-label">输出方式</label>
+                            <div class="style-toggle">
+                                <button type="button" class="output-btn active" data-mode="local" onclick="setOutputMode('local', this)">  保存本地</button>
+                                <button type="button" class="output-btn" data-mode="draft" onclick="setOutputMode('draft', this)">  CSDN 草稿</button>
+                                <button type="button" class="output-btn" data-mode="publish" onclick="setOutputMode('publish', this)">  CSDN 发布</button>
                             </div>
-                            <span class="style-hint" id="publishModeHint">保存为 CSDN 草稿，手动确认后发布</span>
+                            <span class="style-hint" id="outputHint">文件保存到本地 output 目录</span>
                         </div>
                     </div>
-                    <div class="form-hint">输入主题后点击「开始生成」，AI 先生成大纲供你确认，确认后生成内容和配图。默认保存到本地，也可选择发布到指定平台。</div>
+                    <div class="form-hint">输入主题后点击「开始生成」，AI 先生成大纲供你确认，确认后生成内容和配图。默认保存到本地，也可选择发布到 CSDN。</div>
                 </div>
 
                 <!-- 大纲预览区域 -->
@@ -384,57 +366,24 @@
                 : '完整讲解原理、代码、调试';
         }
 
-        // ── 平台与发布方式选择 ──────────────────────────────
-        let selectedPlatform = 'local';   // local / csdn / toutiao
-        let publishMode = 'draft';        // draft / publish
+        // ── 输出方式选择 ──────────────────────────────────
+        let outputMode = 'local';
 
-        const PLATFORMS = {
-            local:   { name: '仅本地', outputMode: 'local' },
-            csdn:    { name: 'CSDN',   outputMode: 'draft' },
-            toutiao: { name: '今日头条', outputMode: 'draft' },
+        const OUTPUT_HINTS = {
+            local: '文件保存到本地 output 目录',
+            draft: '保存为 CSDN 草稿，手动确认后发布',
+            publish: '生成后自动发布到 CSDN',
         };
 
-        const PUBLISH_HINTS = {
-            draft:   (p) => `保存为 ${PLATFORMS[p]?.name || ''} 草稿，手动确认后发布`,
-            publish: (p) => `生成后自动发布到 ${PLATFORMS[p]?.name || ''}`,
-        };
-
-        function selectPlatform(platform, btn) {
-            selectedPlatform = platform;
-            document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+        function setOutputMode(mode, btn) {
+            outputMode = mode;
+            document.querySelectorAll('.output-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            const row = document.getElementById('publishModeRow');
-            if (platform === 'local') {
-                row.style.display = 'none';
-                publishMode = 'local';
-            } else {
-                row.style.display = '';
-                // 重置为草稿模式
-                publishMode = 'draft';
-                document.querySelectorAll('#publishModeToggle .output-btn').forEach(b => {
-                    b.classList.toggle('active', b.dataset.mode === 'draft');
-                });
-                updatePublishHint();
-            }
-        }
-
-        function setPublishMode(mode, btn) {
-            publishMode = mode;
-            document.querySelectorAll('#publishModeToggle .output-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            updatePublishHint();
-        }
-
-        function updatePublishHint() {
-            const hint = document.getElementById('publishModeHint');
-            const fn = PUBLISH_HINTS[publishMode];
-            hint.textContent = fn ? fn(selectedPlatform) : '';
+            document.getElementById('outputHint').textContent = OUTPUT_HINTS[mode] || '';
         }
 
         function getOutputMode() {
-            if (selectedPlatform === 'local') return 'local';
-            return publishMode; // 'draft' or 'publish'
+            return outputMode;
         }
 
         const DEFAULT_DETAILS = [
